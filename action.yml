@@ -25,9 +25,13 @@ inputs:
     required: false
     default: 'false'
   skip_after_successful_duplicate:
-    description: 'If true, skip if an already finished duplicate run can be found'
+    description: 'If true, skip if an already finished successful duplicate run can be found'
     required: false
     default: 'true'
+  skip_after_duplicate:
+    description: 'JSON array. Skip if an already finished duplicate run with a matching conclusion can be found'
+    required: false
+    default: '[]'
   do_not_skip:
     description: 'A JSON-array with triggers that should never be skipped'
     required: false

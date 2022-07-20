@@ -210,16 +210,25 @@ async function main(): Promise<void> {
       'skip_after_successful_duplicate',
       true
     )
+    const skipAfterDuplicate = getStringArrayInput(
+      'skip_after_duplicate'
+    ) as WorkflowRunConclusion[]
     if (skipAfterSuccessfulDuplicates) {
-      const successfulDuplicateRun = detectSuccessfulDuplicateRuns(context)
-      if (successfulDuplicateRun) {
+      skipAfterDuplicate.push('success')
+    }
+    if (skipAfterDuplicate.length > 0) {
+      const completedDuplicateRun = detectCompletedRuns(
+        context,
+        skipAfterDuplicate
+      )
+      if (completedDuplicateRun) {
         core.info(
-          `Skip execution because the exact same files have been successfully checked in ${successfulDuplicateRun.html_url}`
+          `Skip execution because the exact same files have been checked in ${completedDuplicateRun.html_url} with conclusion: ${completedDuplicateRun.conclusion}`
         )
         exitSuccess({
           shouldSkip: true,
-          reason: 'skip_after_successful_duplicate',
-          skippedBy: successfulDuplicateRun
+          reason: 'skip_after_duplicate',
+          skippedBy: completedDuplicateRun
         })
       }
     }
@@ -304,16 +313,21 @@ async function cancelWorkflowRun(
   }
 }
 
-function detectSuccessfulDuplicateRuns(
-  context: WRunContext
+function detectCompletedRuns(
+  context: WRunContext,
+  matchConclusions: WorkflowRunConclusion[]
 ): WorkflowRun | undefined {
   const duplicateRuns = context.olderRuns.filter(
     run => run.treeHash === context.currentRun.treeHash
   )
-  const successfulDuplicate = duplicateRuns.find(run => {
-    return run.status === 'completed' && run.conclusion === 'success'
+  const completedDuplicate = duplicateRuns.find(run => {
+    return (
+      run.status === 'completed' &&
+      run.conclusion &&
+      matchConclusions.includes(run.conclusion)
+    )
   })
-  return successfulDuplicate
+  return completedDuplicate
 }
 
 function detectConcurrentRuns(context: WRunContext): WorkflowRun | undefined {
